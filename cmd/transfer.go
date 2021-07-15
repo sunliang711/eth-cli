@@ -16,12 +16,15 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"os"
 	"strconv"
 	"syscall"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
 	"github.com/sunliang711/eth/sdk"
 	"golang.org/x/crypto/ssh/terminal"
@@ -65,6 +68,8 @@ func init() {
 	transferCmd.Flags().StringP("value", "v", "0", "transfer value(unit: gas)")
 	transferCmd.Flags().Uint64P("price", "p", 0, "gas price [optional]")
 	transferCmd.Flags().Uint64P("nonce", "n", 0, "nonce [optional]")
+	transferCmd.Flags().Bool("sync", false, "transfer in sync mode")
+	transferCmd.Flags().StringP("data", "d", "", "transaction data in hex string mode without 0x prefix")
 
 }
 
@@ -79,6 +84,8 @@ func transfer(cmd *cobra.Command, args []string) {
 	value := cmd.Flags().Lookup("value").Value.String()
 	priceStr := cmd.Flags().Lookup("price").Value.String()
 	nonceStr := cmd.Flags().Lookup("nonce").Value.String()
+	syncMode := cmd.Flags().Lookup("sync").Value.String()
+	data := cmd.Flags().Lookup("data").Value.String()
 
 	if fromSK == "" {
 		fmt.Fprintf(os.Stderr, "Enter fromSK: ")
@@ -127,11 +134,41 @@ func transfer(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("info: transfer eth\nfrom: %#x\nto: %#v\nvalue: %v\ngasPrice: %v\nnonce: %v\n", fromAddr, toAddr, v, gasPrice, nonce)
-	hash, err := txMan.TransferEth(fromSK, toAddr, v, gasPrice, nonce)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: transfer eth error: %v", err)
-		os.Exit(1)
+
+	var d []byte
+	if data != "" {
+		d, err = hexutil.Decode(data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "invalid data: %v", err)
+			os.Exit(1)
+		}
 	}
-	fmt.Printf("transaction hash: %v\n", hash)
+	if syncMode == "true" {
+		fmt.Printf("sync mode: true\n")
+		hash, err := txMan.TransferEthWithDataSync(fromSK, toAddr, v, d, gasPrice, nonce)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: transfer eth error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("transaction hash: %v\n", hash)
+		tx,_,err := txMan.TransactionByHash(context.Background(),common.HexToHash(hash))
+		if err != nil{
+			fmt.Fprintf(os.Stderr,"get transaction details error: %v\n",err)
+			os.Exit(1)
+		}
+		jsonTx,err := tx.MarshalJSON()
+		if err != nil {
+			os.Exit(1)
+		}
+		fmt.Printf("transaction info: %v",string(jsonTx))
+	} else {
+		fmt.Printf("sync mode: false\n")
+		hash, err := txMan.TransferEthWithData(fromSK, toAddr, v, d, gasPrice, nonce)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: transfer eth error: %v", err)
+			os.Exit(1)
+		}
+		fmt.Printf("transaction hash: %v\n", hash)
+	}
 
 }
