@@ -87,6 +87,11 @@ func transfer(cmd *cobra.Command, args []string) {
 	syncMode := cmd.Flags().Lookup("sync").Value.String()
 	data := cmd.Flags().Lookup("data").Value.String()
 
+	if rpcURL == "" {
+		fmt.Fprintf(os.Stderr,"need rpc url with --rpc flag\n")
+		os.Exit(1)
+	}
+
 	if fromSK == "" {
 		fmt.Fprintf(os.Stderr, "Enter fromSK: ")
 		// read fromSK
