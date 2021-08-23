@@ -33,14 +33,14 @@ import (
 // transferCmd represents the transfer command
 var transferCmd = &cobra.Command{
 	Use:   "transfer",
-	Short: "transfer eth cmd",
+	Short: "transfer eth",
 	Long: `transfer eth from sender to receiver:
 
 available flags(no flags will enter interactive mode):
     --rpc rpc url
     --from sender sk
     --to receiver address
-    --value value of eth to transfer(uint: eth/1e18)
+    --value value of eth to transfer(uint: wei)
     --price optional gas price
     --nonce optional nonce`,
 	Run: transfer,
@@ -65,7 +65,7 @@ func init() {
 	transferCmd.Flags().StringP("rpc", "r", "", "rpc URL")
 	transferCmd.Flags().StringP("from", "f", "", "from sk")
 	transferCmd.Flags().StringP("to", "t", "", "to address")
-	transferCmd.Flags().StringP("value", "v", "0", "transfer value(unit: gas)")
+	transferCmd.Flags().StringP("value", "v", "0", "transfer value(unit: wei)")
 	transferCmd.Flags().Uint64P("price", "p", 0, "gas price [optional]")
 	transferCmd.Flags().Uint64P("nonce", "n", 0, "nonce [optional]")
 	transferCmd.Flags().Bool("sync", false, "transfer in sync mode")
